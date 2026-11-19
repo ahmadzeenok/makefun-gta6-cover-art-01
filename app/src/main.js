@@ -1,7 +1,11 @@
-// Neon Vice Cover Studio — wires the page: four photo panels with upload, sample
-// picks, zoom and drag-to-pan; four layouts; four grades; editable title and
-// subtitle; grain and vignette; one-click PNG export in 1080x1080, 1080x1350 and
-// 1920x1080. A `?shot=` query sets up a fixed scene for a screenshot (./shots.js).
+// Neon Vice Cover Studio — wires the page together.
+//
+// Four photo panels (upload your own photo, pick a bundled sample, zoom with
+// the slider, drag the photo inside the canvas to position it), four layouts,
+// four grades, an editable Anton title with a Pacifico neon subtitle, film
+// grain and vignette toggles, and one-click PNG export in 1080x1080,
+// 1080x1350 and 1920x1080. A `?shot=` query sets up a fixed scene for a
+// screenshot (see ./shots.js).
 
 import { drawCover, freshState, GRADES, LAYOUTS } from './cover.js';
 import { shotConfig, markShotReady, SIZES } from './shots.js';
@@ -24,7 +28,7 @@ export function loadImage(url) {
   });
 }
 
-/** Sets the canvas backing size for an export size and redraws. */
+/** Resizes the canvas backing store for an export size and redraws. */
 function setCanvasSize(w, h) {
   canvas.width = w;
   canvas.height = h;
@@ -36,7 +40,7 @@ function redraw() {
   syncPanelCards();
 }
 
-/** Keeps the panel cards' zoom sliders and selected highlight in sync. */
+/** Keeps each panel card's selected highlight and zoom slider in sync. */
 function syncPanelCards() {
   document.querySelectorAll('.panel-card').forEach((card) => {
     const i = Number(card.dataset.panel);
@@ -46,7 +50,7 @@ function syncPanelCards() {
   });
 }
 
-/** Puts an image into one panel (or every panel) and redraws. */
+/** Drops an image into one panel — or into every panel — and redraws. */
 function placePhoto(img, index, all) {
   const targets = all ? [0, 1, 2, 3] : [index];
   for (const i of targets) {
@@ -96,7 +100,7 @@ document.querySelectorAll('.panel-card').forEach((card) => {
     state.panels[i].zoom = Number(e.target.value);
     redraw();
   });
-  card.querySelector('.fill-all').addEventListener('click', async () => {
+  card.querySelector('.fill-all').addEventListener('click', () => {
     const img = state.panels[i].img;
     if (!img) {
       statusEl.textContent = 'Load a photo into this panel first.';
@@ -108,20 +112,17 @@ document.querySelectorAll('.panel-card').forEach((card) => {
 });
 
 // ---- layout and grade pickers ----
-document.querySelectorAll('[data-layout]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    state.layout = btn.dataset.layout;
-    document.querySelectorAll('[data-layout]').forEach((b) => b.classList.toggle('active', b === btn));
-    redraw();
+function wireChoice(attr, apply) {
+  document.querySelectorAll(`[data-${attr}]`).forEach((btn) => {
+    btn.addEventListener('click', () => {
+      apply(btn.dataset[attr]);
+      document.querySelectorAll(`[data-${attr}]`).forEach((b) => b.classList.toggle('active', b === btn));
+      redraw();
+    });
   });
-});
-document.querySelectorAll('[data-grade]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    state.grade = btn.dataset.grade;
-    document.querySelectorAll('[data-grade]').forEach((b) => b.classList.toggle('active', b === btn));
-    redraw();
-  });
-});
+}
+wireChoice('layout', (v) => { state.layout = v; });
+wireChoice('grade', (v) => { state.grade = v; });
 
 // ---- caption, effects, export size ----
 document.getElementById('title').addEventListener('input', (e) => {
@@ -250,8 +251,8 @@ if (shot) {
   runShotMode().catch(() => markShotReady());
 } else {
   setCanvasSize(exportSize[0], exportSize[1]);
-  // Preload the bundled samples so the first click is instant, and show a
-  // ready-made cover on first open: hero photo left, friends right.
+  // Preload the bundled samples so the first click is instant, and open with
+  // a ready-made cover: hero photo left, friends right, boulevard, pier.
   loadSample('man-rooftop').then((img) => { state.panels[0].img = img; redraw(); }).catch(() => {});
   loadSample('friends-neon').then((img) => { state.panels[1].img = img; redraw(); }).catch(() => {});
   loadSample('boulevard').then((img) => { state.panels[2].img = img; redraw(); }).catch(() => {});
